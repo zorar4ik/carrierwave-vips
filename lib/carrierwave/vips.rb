@@ -29,6 +29,10 @@ module CarrierWave
         process :resize_to_fill => [width, height]
       end
 
+      def resize_and_pad(width, height)
+        process :resize_and_pad => [width, height]
+      end
+
       def quality(percent)
         process :quality => percent
       end
@@ -44,48 +48,26 @@ module CarrierWave
       def auto_orient
         process :auto_orient
       end
+
+      def round
+        process :round
+      end
     end
 
     ##
-    # Read the camera EXIF data to determine orientation and adjust accordingly
-    #
-    def auto_orient
-      chain! { |builder| builder.autorot }
-    end
-
-    ##
-    # Change quality of the image (if supported by file format)
-    #
+    # Resize the image to fit within the specified dimensions while retaining
+    # the original aspect ratio. Will only resize the image if it is larger than the
+    # specified dimensions. The resulting image may be shorter or narrower than specified
+    # in the smaller dimension but will not be larger than the specified values.
     #
     # === Parameters
-    # [percent (Integer)] quality from 0 to 100
     #
-    def quality(percent)
-      chain! { |builder| builder.saver(Q: percent) }
-    end
-
-    ##
-    # Remove all exif and icc data when writing to a file. This method does
-    # not actually remove any metadata but rather marks it to be removed when
-    # writing the file.
+    # [width (Integer)] the width to scale the image to
+    # [height (Integer)] the height to scale the image to
+    # [opts (Hash)] options to be passed to thumbnail function
     #
-    def strip
-      chain! { |builder| builder.saver(strip: true) }
-    end
-
-    ##
-    # Convert the file to a different format
-    #
-    #
-    # === Parameters
-    # [format (String)] the format for the file format (jpeg, png)
-    # [opts (Hash)] options to be passed to converting function (ie, :interlace => true for png)
-    #
-    def convert(format, opts = {})
-      format = format.to_s.downcase
-      format = 'jpg' if format == 'jpeg'
-
-      chain! { |builder| builder.convert(format).saver(opts) }
+    def resize_to_limit(width, height, opts = {})
+      thumbnail!(:resize_to_limit, width, height, opts)
     end
 
     ##
@@ -123,22 +105,6 @@ module CarrierWave
 
     ##
     # Resize the image to fit within the specified dimensions while retaining
-    # the original aspect ratio. Will only resize the image if it is larger than the
-    # specified dimensions. The resulting image may be shorter or narrower than specified
-    # in the smaller dimension but will not be larger than the specified values.
-    #
-    # === Parameters
-    #
-    # [width (Integer)] the width to scale the image to
-    # [height (Integer)] the height to scale the image to
-    # [opts (Hash)] options to be passed to thumbnail function
-    #
-    def resize_to_limit(width, height, opts = {})
-      thumbnail!(:resize_to_limit, width, height, opts)
-    end
-
-    ##
-    # Resize the image to fit within the specified dimensions while retaining
     # the original aspect ratio, padding the image to keep the input dimensions.
     # The resulting image is centered, the default background color is black (see options).
     #
@@ -154,6 +120,75 @@ module CarrierWave
     end
 
     ##
+    # Change quality of the image (if supported by file format)
+    #
+    #
+    # === Parameters
+    # [percent (Integer)] quality from 0 to 100
+    #
+    def quality(percent)
+      chain! { |builder| builder.saver(Q: percent) }
+    end
+
+    ##
+    # Convert the file to a different format
+    #
+    #
+    # === Parameters
+    # [format (String)] the format for the file format (jpeg, png)
+    # [opts (Hash)] options to be passed to converting function (ie, :interlace => true for png)
+    #
+    def convert(format, opts = {})
+      format = format.to_s.downcase
+      format = 'jpg' if format == 'jpeg'
+
+      chain! { |builder| builder.convert(format).saver(opts) }
+    end
+
+    ##
+    # Remove all exif and icc data when writing to a file. This method does
+    # not actually remove any metadata but rather marks it to be removed when
+    # writing the file.
+    #
+    def strip
+      chain! { |builder| builder.saver(strip: true) }
+    end
+    
+    ##
+    # Read the camera EXIF data to determine orientation and adjust accordingly
+    #
+    def auto_orient
+      chain! { |builder| builder.autorot }
+    end
+
+    ##
+    # Places image inside circle to have more 'avatar' look like
+    #
+    #
+    # === Parameters
+    #
+    # [width (Integer)] the width to scale the image to
+    # [height (Integer)] the height to scale the image to
+    # [opts (Hash)] options to be passed (i.e, :xc_color => "White")
+    def fit_into_circle(width, height, opts={})
+      xc_color = opts.fetch(:xc, 'Black')
+      fill_color = opts.fetch(:fill, 'White')
+      radius = opts.fetch(:radius, "#{width}, #{height / 2}")
+
+      chain! do |builder| 
+        builer.gravity('Center')
+          .stack(
+            size: "#{width}x#{height}",
+            xc: xc_color,
+            fill: fill_color,
+            draw: "circle #{width / 2} #{height / 2} #{radius}",
+            alpha: 'Copy'
+          )
+          .compose('CopyOpacity').composite.trim
+      end
+    end
+
+    ##
     # Manipulate the image with Vips. Saving of the image is delayed until after
     # all the process blocks have been called. Make sure you always return an
     # Vips::Image object from the block
@@ -162,8 +197,7 @@ module CarrierWave
     #
     # This method assumes that the object responds to +current_path+ and +file+.
     # Any class that this module is mixed into must have a +current_path+ and a +file+ method.
-    # CarrierWave::Uploader does, so you won't need to worry about this in
-    # most cases.
+    # CarrierWave::Uploader does, so you won't need to worry about this in most cases.
     #
     # === Yields
     #
