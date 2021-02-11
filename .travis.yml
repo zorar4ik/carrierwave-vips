@@ -6,7 +6,7 @@ language: ruby
 rvm:
   - '2.5.0'
 
-script: "bundle exec rspec spec/carrierwave/vips_spec"
+script: "bundle exec rspec spec/"
 
 gemfile:
   - Gemfile
