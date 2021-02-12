@@ -1,7 +1,7 @@
 CarrierWave-VIPS
 ======================
 
-[![Build Status](https://secure.travis-ci.org/eltiare/carrierwave-vips.png?branch=master)](http://travis-ci.org/eltiare/carrierwave-vips)
+[![Build Status](https://travis-ci.com/zorar4ik/carrierwave-vips.svg?branch=master)](https://travis-ci.com/zorar4ik/carrierwave-vips)
 
 This gem adds support to CarrierWave for the ultrafast and resource efficient VIPS library.
 
@@ -40,7 +40,7 @@ You can use the following methods to change your images.
 * `quality(0-100)` Sets the quality of the image being saved if JPEG
 * `strip` Removes any exif and ICC metadata contained in the image to reduce filesize.
 * `auto_orient` Rotates the image according to the Orientation EXIF tag and then removes the tag.
-* `fit_into_circle` Fits image inside circle.
+* `fit_into_circle(x,y)` Fits image inside circle.
 
 To see how vips stands up to other image processing libraries, see this benchmark:  https://github.com/stanislaw/carrierwave-vips-benchmarks
 

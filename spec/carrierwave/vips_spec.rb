@@ -49,17 +49,24 @@ describe CarrierWave::Vips do
     end
   end
 
-  # Gotta figure out how to test this properly.
-  it 'performs multiple operations properly'
-
   describe "#convert" do
-
-    it 'converts from one format to another' do
-      instance.convert('png')
-      instance.process!
-      expect(instance.filename).to match(/png$/)
+    context 'when common image' do
+      it 'converts from one format to another' do
+        instance.convert('png')
+        instance.process!
+        expect(instance.filename).to match(/png$/)
+      end
     end
-    
+
+    context 'when rare image' do
+      let!(:instance) { create_instance('bike.heif') }
+
+      it 'converts heic/heif image to jpg' do
+        instance.convert('jpg')
+        instance.process!
+        expect(instance.filename).to match(/jpg$/)
+      end
+    end
   end
 
   describe '#resize_to_fill' do
