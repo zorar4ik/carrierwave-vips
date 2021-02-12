@@ -59,7 +59,7 @@ describe CarrierWave::Vips do
     end
 
     context 'when rare image' do
-      let!(:instance) { create_instance('bike.heif') }
+      let!(:instance) { create_instance('bike.heic') }
 
       it 'converts heic/heif image to jpg' do
         instance.convert('jpg')
