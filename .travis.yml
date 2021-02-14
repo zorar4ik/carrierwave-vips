@@ -11,4 +11,4 @@ script: "bundle exec rspec spec/"
 gemfile:
   - Gemfile
 before_install:
-  - sudo apt-get install libvips-dev
+  - sudo apt-get install libx265-dev libde265-dev libheif-dev libvips-dev 
